@@ -1,41 +1,40 @@
-import type { UserResponse, ImportedPage } from "scrapbox-types/response";
+import fs from "node:fs";
+import axios from "axios";
+import type { UserResponse } from "scrapbox-types/response";
 
-const cookie = (sid: string) => `connect.sid=${sid}`;
+export const client = (sid: string) => {
+  const cookie = `connect.sid=${sid}`;
 
-export const fetchProfile = async (sid: string) => {
-  const res = await fetch("https://scrapbox.io/api/users/me", {
-    headers: { Cookie: cookie(sid) },
+  const client = axios.create({
+    baseURL: "https://scrapbox.io/api/",
+    headers: {
+      Cookie: cookie,
+    },
   });
-  const json = await res.json();
-  return json as UserResponse;
-};
 
-export const importProject = async (
-  projectName: string,
-  sid: string,
-  pages: ImportedPage[]
-) => {
-  const formData = new FormData();
-  formData.append(
-    "import-file",
-    new Blob([JSON.stringify({ pages })], {
-      type: "application/octet-stream",
-    })
-  );
-  formData.append("name", "undefined");
+  return {
+    async fetchProfile() {
+      return client.get<UserResponse>("/users/me");
+    },
 
-  const user = await fetchProfile(sid);
+    async importProject(projectName: string, path: fs.PathLike) {
+      const user = await this.fetchProfile();
+      if (user.data.isGuest) {
+        throw new Error("seems Guest");
+      }
 
-  return await fetch(
-    `https://scrapbox.io/api/page-data/import/${projectName}.json`,
-    {
-      method: "POST",
-      headers: {
-        Cookie: cookie(sid),
-        Accept: "application/json, text/plain, */*",
-        "X-CSRF-TOKEN": user.csrfToken,
-      },
-      body: formData,
-    }
-  );
+      return client.post(
+        `/page-data/import/${projectName}.json`,
+        {
+          "import-file": fs.createReadStream(path),
+        },
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            "X-CSRF-TOKEN": user.data.csrfToken,
+          },
+        }
+      );
+    },
+  };
 };

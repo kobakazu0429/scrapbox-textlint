@@ -1,12 +1,13 @@
 import { parseArgs } from "node:util";
-import { readFile } from "node:fs/promises";
-import { importProject } from "../utils/scrapbox";
+import { client } from "../utils/scrapbox";
 
 const main = async () => {
   const SID = process.env.SID;
   if (!SID) {
     throw new Error("process.env.SID is not defined");
   }
+
+  const scrapbox = client(SID);
 
   const { values: arg } = parseArgs({
     args: process.argv.slice(2),
@@ -27,15 +28,21 @@ const main = async () => {
   if (!arg["project-name"]) {
     throw new Error("must to set `--project-name, -p`");
   }
-  if (!arg["upload-file"]) {
-    throw new Error("must to set `--upload-file -u`");
+
+  let uploadFilePath: string;
+  if (process.stdin.isTTY) {
+    if (!arg["upload-file"]) {
+      throw new Error("must to set `--upload-file -f`");
+    }
+    uploadFilePath = arg["upload-file"];
+  } else {
+    uploadFilePath = "/dev/stdin";
   }
 
-  const uploadFile = JSON.parse(await readFile(arg["upload-file"], "utf-8"));
+  const res = await scrapbox.importProject(arg["project-name"], uploadFilePath);
 
-  const res = await importProject(arg["project-name"], SID, uploadFile);
   if (res.status === 200) {
-    console.log(await res.json());
+    console.log(res.data);
   } else {
     console.log(res);
   }
