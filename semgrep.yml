@@ -1,0 +1,82 @@
+rules:
+  - id: remove-gunzip
+    patterns:
+      - pattern-inside: "$X.arrayBuffer().then(function ($Y) {...})"
+      - pattern: "var $Z = new $A.Zlib.Gunzip(new Uint8Array($Y)).decompress()"
+    fix: "var $Z = $Y"
+    message: ""
+    languages:
+      - javascript
+    severity: ERROR
+
+  - id: remove-buffer
+    patterns:
+      - pattern-inside: "$X.arrayBuffer().then(function ($Y) {...})"
+      - pattern: "$Z.buffer"
+    fix: "$Z"
+    message: ""
+    languages:
+      - javascript
+    severity: ERROR
+
+  # - id: use-gcs-dict
+  #   pattern-regex: https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict
+  #   fix: https://storage.googleapis.com/scrapbox-lint
+  #   message: ""
+  #   languages:
+  #     - javascript
+  #   severity: ERROR
+
+  # - id: .dat.gz-to-.dat
+  #   patterns:
+  #     - pattern-inside: "[...]"
+  #     - pattern-regex: /*\.dat\.gz
+  #   fix: ".dat"
+  #   message: ""
+  #   languages:
+  #     - javascript
+  #   severity: ERROR
+
+
+'s/https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/https://storage.googleapis.com/scrapbox-lint/' -n
+
+ "s|https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict|https://storage.googleapis.com/scrapbox-lint/|g" in.txt > out.txt
+
+
+(function(e){
+  var r=new i.Zlib.Gunzip(new Uint8Array(e)).decompress();
+  return s.set(n,r.buffer).then((()=>{
+    c.resolve(r.buffer),
+    t(null,r.buffer)
+  }))
+  })
+
+gsed \
+  -e "s|https://cdn.jsdelivr.net/npm/kuromoji@0.1.2|https://storage.googleapis.com/scrapbox-lint/|g" \
+  -e "s|(function(e){var r=new i.Zlib.Gunzip(new Uint8Array(e)).decompress();return s.set(n,r.buffer).then((()=>{c.resolve(r.buffer),t(null,r.buffer)}))})|(function(e){return s.set(n,e).then((()=>{c.resolve(e),t(null,e)}))})|g" \
+  -E "s|((base|check|tid|tid_pos|tid_map|cc|unk|unk_pos|unk_map|unk_char|unk_compat|unk_invoke)\.dat\.gz)|\2\.dat|g" \
+  test.txt > test.out-1
+
+base.dat.gz
+check.dat.gz
+tid.dat.gz
+tid_pos.dat.gz
+tid_map.dat.gz
+cc.dat.gz
+unk.dat.gz
+unk_pos.dat.gz
+unk_map.dat.gz
+unk_char.dat.gz
+unk_compat.dat.gz
+unk_invoke.dat.gz
+
+
+
+gsed \
+  -e "s|https://cdn.jsdelivr.net/npm/kuromoji@0.1.2|https://storage.googleapis.com/scrapbox-lint/|g" \
+  -e "s|(function(e){var r=new i.Zlib.Gunzip(new Uint8Array(e)).decompress();return s.set(n,r.buffer).then((()=>{c.resolve(r.buffer),t(null,r.buffer)}))})|(function(e){return s.set(n,e).then((()=>{c.resolve(e),t(null,e)}))})|g" | \
+gsed \
+  -E "s#((base|check|tid|tid_pos|tid_map|cc|unk|unk_pos|unk_map|unk_char|unk_compat|unk_invoke)\.dat\.gz)#\2\.dat#g" \
+  textlint-worker.js > textlint-worker2.js
+
+    -E "s#((base|check|tid|tid_pos|tid_map|cc|unk|unk_pos|unk_map|unk_char|unk_compat|unk_invoke)\.dat\.gz)#\2\.dat#g" \
